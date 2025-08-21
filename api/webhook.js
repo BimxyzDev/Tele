@@ -1,76 +1,71 @@
 import { MongoClient } from "mongodb";
+import fetch from "node-fetch";
 
-const uri = process.env.MONGO_URI;
-const client = new MongoClient(uri);
-const dbName = "telegramBotDB";
-const collectionName = "users";
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const OWNER_ID = process.env.OWNER_ID;
+const MONGO_URL = process.env.MONGO_URL;
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
-
-  const body = req.body;
-  if (!body.message) return res.status(200).json({ ok: true });
-
-  const chatId = body.message.chat.id;
-  const text = body.message.text || "";
-
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const users = db.collection(collectionName);
-
-    // Simpan chatId (auto register user)
-    await users.updateOne(
-      { chatId },
-      { $set: { chatId } },
-      { upsert: true }
-    );
-
-    if (text === "/start") {
-      await sendMessage(chatId, "👋 Selamat datang!\n\nMenu:\n/cekid - Cek ID kamu\n/cekidch - Cek ID group/channel");
-    }
-
-    else if (text === "/cekid") {
-      await sendMessage(chatId, `🆔 ID kamu: \`${chatId}\``, "Markdown");
-    }
-
-    else if (text === "/cekidch") {
-      await sendMessage(chatId, `🆔 ID chat ini: \`${chatId}\``, "Markdown");
-    }
-
-    else if (text.startsWith("/broadcast ")) {
-      const ADMIN_ID = Number(process.env.ADMIN_ID);
-      if (chatId !== ADMIN_ID) {
-        await sendMessage(chatId, "🚫 Kamu tidak punya izin broadcast.");
-      } else {
-        const msg = text.replace("/broadcast ", "").trim();
-        const allUsers = await users.find({}).toArray();
-
-        for (let u of allUsers) {
-          await sendMessage(u.chatId, `📢 Broadcast:\n\n${msg}`);
-        }
-        await sendMessage(chatId, `✅ Broadcast terkirim ke ${allUsers.length} user.`);
-      }
-    }
-
-  } catch (err) {
-    console.error("Error:", err);
-  } finally {
-    await client.close();
-  }
-
-  return res.status(200).json({ ok: true });
+let cachedDb = null;
+async function connectToDB() {
+  if (cachedDb) return cachedDb;
+  const client = new MongoClient(MONGO_URL);
+  await client.connect();
+  cachedDb = client.db("telegram_bot");
+  return cachedDb;
 }
 
-// Helper kirim pesan
-async function sendMessage(chatId, text, parse_mode = null) {
-  await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(200).json({ status: "ok" });
+  }
+
+  const update = req.body;
+  const message = update.message;
+
+  if (!message) return res.status(200).end();
+
+  const chatId = message.chat.id;
+  const text = message.text?.trim();
+
+  const db = await connectToDB();
+  const users = db.collection("users");
+
+  // simpan user yg pernah start bot
+  await users.updateOne({ chatId }, { $set: { chatId } }, { upsert: true });
+
+  // perintah bot
+  if (text === "/start") {
+    await sendMessage(chatId, "👋 Halo! Selamat datang di bot.\n\nPerintah:\n/cekid → cek id kamu\n/cekidch → cek id channel (forward pesan)\n/cekidgrup → cek id grup (pakai di grup)\n\nKhusus owner:\n/broadcast <teks>");
+  }
+
+  if (text === "/cekid") {
+    await sendMessage(chatId, `🆔 ID kamu: \`${chatId}\``);
+  }
+
+  if (message.forward_from_chat) {
+    await sendMessage(chatId, `🆔 ID chat ini: \`${message.forward_from_chat.id}\``);
+  }
+
+  if (text?.startsWith("/broadcast") && String(chatId) === OWNER_ID) {
+    const bcText = text.replace("/broadcast", "").trim();
+    if (!bcText) {
+      await sendMessage(chatId, "❌ Teks broadcast kosong!");
+    } else {
+      const allUsers = await users.find({}).toArray();
+      for (let u of allUsers) {
+        await sendMessage(u.chatId, `📢 Broadcast:\n${bcText}`);
+      }
+      await sendMessage(chatId, `✅ Broadcast terkirim ke ${allUsers.length} user`);
+    }
+  }
+
+  return res.status(200).end();
+}
+
+async function sendMessage(chatId, text) {
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode
-    })
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" })
   });
-    }
+}
