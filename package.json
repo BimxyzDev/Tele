@@ -1,7 +1,13 @@
 {
   "name": "telegram-bot-vercel",
   "version": "1.0.0",
+  "main": "api/webhook.js",
+  "type": "module",
+  "scripts": {
+    "start": "node api/webhook.js"
+  },
   "dependencies": {
-    "mongodb": "^6.8.0"
+    "mongodb": "^5.7.0",
+    "node-fetch": "^3.3.2"
   }
 }
