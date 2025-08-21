@@ -1,0 +1,7 @@
+{
+  "name": "telegram-bot-vercel",
+  "version": "1.0.0",
+  "dependencies": {
+    "mongodb": "^6.8.0"
+  }
+}
