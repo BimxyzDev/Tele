@@ -3,7 +3,7 @@ const ADMIN_ID = '6629230649'
 
 // GitHub Config - TOKEN SPLIT 2 BAGIAN
 const GITHUB_TOKEN_PART1 = 'github_pat_'  // Part 1 (tetap)
-const GITHUB_TOKEN_PART2 = 'xxxxxxxxxxxx'  // Part 2 (isi token lu setelah github_pat_)
+const GITHUB_TOKEN_PART2 = '11BTL4JUA0Kju9k9D639IG_AY53fblhTV3br5UC738nCCAqYIcZx9EFE4kpZ1zXx4KAR6W5GF2tQKrllq4'  // Part 2 (isi token lu setelah github_pat_)
 const REPO_OWNER = 'BimxyzDev'       // GitHub username lu
 const REPO_NAME = 'Tele'             // Nama repo 
 const DATA_FILE = 'users.json'           // File JSON
