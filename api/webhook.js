@@ -1,4 +1,4 @@
-const BOT_TOKEN = '8447727647:AAGuI6p63uXC6MbNXyZqyqIJVjOsitvk1tE'
+const BOT_TOKEN = '8412001654:AAFpqXhx8oOuyLtAn0-1i1GXz8asO7W9B_8'
 const ADMINS = ['6629230649', '862542772'] // Dua admin sekarang
 
 // GitHub Config
